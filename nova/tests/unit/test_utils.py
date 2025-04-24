@@ -772,7 +772,7 @@ class SpawnNTestCase(test.NoDBTestCase):
         def fake(arg):
             pass
         pool = utils._get_default_green_pool()
-        with mock.patch.object(pool, self.spawn_name, _fake_spawn):
+        with mock.patch.object(pool, "submit", _fake_spawn):
             getattr(utils, self.spawn_name)(fake, 'test')
         self.assertIsNone(common_context.get_current())
 
@@ -790,7 +790,7 @@ class SpawnNTestCase(test.NoDBTestCase):
             pass
 
         pool = utils._get_default_green_pool()
-        with mock.patch.object(pool, self.spawn_name, _fake_spawn):
+        with mock.patch.object(pool, "submit", _fake_spawn):
             getattr(utils, self.spawn_name)(fake, ctxt, kwarg1='test')
         self.assertEqual(ctxt, common_context.get_current())
 
@@ -811,7 +811,7 @@ class SpawnNTestCase(test.NoDBTestCase):
             pass
 
         pool = utils._get_default_green_pool()
-        with mock.patch.object(pool, self.spawn_name, _fake_spawn):
+        with mock.patch.object(pool, "submit", _fake_spawn):
             getattr(utils, self.spawn_name)(fake, ctxt_passed, kwarg1='test')
         self.assertEqual(ctxt, common_context.get_current())
 
@@ -1486,4 +1486,29 @@ class ScatterGatherExecutorTestCase(test.NoDBTestCase):
 
         utils.destroy_scatter_gather_executor()
         self.assertIsNone(utils.SCATTER_GATHER_EXECUTOR)
+        self.assertFalse(executor.alive)
+
+
+class DefaultExecutorTestCase(test.NoDBTestCase):
+    def test_executor_is_named(self):
+        executor = utils._get_default_green_pool()
+        # NOTE(gibi): during test we use a test-case-specific name, outside
+        # of test we use process name specific name instead.
+        self.assertRegex(executor.name,
+            "nova.tests.unit.test_utils.DefaultExecutor.*"
+            "test_executor_is_named.default")
+
+    @mock.patch.object(
+        utils, 'concurrency_mode_threading', new=mock.Mock(return_value=False))
+    def test_executor_type_eventlet(self):
+        executor = utils._get_default_green_pool()
+
+        self.assertEqual('GreenThreadPoolExecutor', type(executor).__name__)
+
+    def test_executor_destroy(self):
+        executor = utils._get_default_green_pool()
+        self.assertIsNotNone(utils.DEFAULT_GREEN_POOL)
+
+        utils.destroy_default_green_pool()
+        self.assertIsNone(utils.DEFAULT_GREEN_POOL)
         self.assertFalse(executor.alive)
