@@ -11317,7 +11317,7 @@ class LibvirtDriver(driver.ComputeDriver):
                                      migrate_data, guest,
                                      device_names)
 
-        finish_event = eventlet.event.Event()
+        finish_event = threading.Event()
         self.active_migrations[instance.uuid] = deque()
 
         def thread_finished(thread, event):

@@ -558,9 +558,9 @@ class CacheConcurrencyTestCase(test.NoDBTestCase):
         uuid = uuids.fake
 
         backend = imagebackend.Backend(False)
-        wait1 = eventlet.event.Event()
-        done1 = eventlet.event.Event()
-        sig1 = eventlet.event.Event()
+        wait1 = threading.Event()
+        done1 = threading.Event()
+        sig1 = threading.Event()
         thr1 = eventlet.spawn(backend.by_name(self._fake_instance(uuid),
                                               'name').cache,
                 _concurrency, 'fname', None,
@@ -569,9 +569,9 @@ class CacheConcurrencyTestCase(test.NoDBTestCase):
         # Thread 1 should run before thread 2.
         sig1.wait()
 
-        wait2 = eventlet.event.Event()
-        done2 = eventlet.event.Event()
-        sig2 = eventlet.event.Event()
+        wait2 = threading.Event()
+        done2 = threading.Event()
+        sig2 = threading.Event()
         thr2 = eventlet.spawn(backend.by_name(self._fake_instance(uuid),
                                               'name').cache,
                 _concurrency, 'fname', None,
@@ -596,9 +596,9 @@ class CacheConcurrencyTestCase(test.NoDBTestCase):
         uuid = uuids.fake
 
         backend = imagebackend.Backend(False)
-        wait1 = eventlet.event.Event()
-        done1 = eventlet.event.Event()
-        sig1 = eventlet.event.Event()
+        wait1 = threading.Event()
+        done1 = threading.Event()
+        sig1 = threading.Event()
         thr1 = eventlet.spawn(backend.by_name(self._fake_instance(uuid),
                                               'name').cache,
                 _concurrency, 'fname2', None,
@@ -607,9 +607,9 @@ class CacheConcurrencyTestCase(test.NoDBTestCase):
         # Thread 1 should run before thread 2.
         sig1.wait()
 
-        wait2 = eventlet.event.Event()
-        done2 = eventlet.event.Event()
-        sig2 = eventlet.event.Event()
+        wait2 = threading.Event()
+        done2 = threading.Event()
+        sig2 = threading.Event()
         thr2 = eventlet.spawn(backend.by_name(self._fake_instance(uuid),
                                               'name').cache,
                 _concurrency, 'fname1', None,
@@ -14150,7 +14150,7 @@ class LibvirtConnTestCase(test.NoDBTestCase,
         drvr.active_migrations[instance.uuid] = collections.deque()
         dom = fakelibvirt.Domain(drvr._get_connection(), "<domain/>", True)
         guest = libvirt_guest.Guest(dom)
-        finish_event = eventlet.event.Event()
+        finish_event = threading.Event()
 
         def fake_job_info():
             while True:
@@ -14833,7 +14833,7 @@ class LibvirtConnTestCase(test.NoDBTestCase,
 
         class AnyEventletEvent(object):
             def __eq__(self, other):
-                return type(other) is eventlet.event.Event
+                return type(other) is threading.Event
 
         mock_thread.assert_called_once_with(
             drvr._live_migration_operation,

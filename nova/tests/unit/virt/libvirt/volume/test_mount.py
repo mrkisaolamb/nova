@@ -82,7 +82,7 @@ class ThreadController(object):
         # The last epoch we waited at
         self.last_epoch = 0
 
-        self.start_event = eventlet.event.Event()
+        self.start_event = threading.Event()
         self.running = False
         self.complete = False
 

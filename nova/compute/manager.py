@@ -33,6 +33,7 @@ import functools
 import inspect
 import math
 import sys
+import threading
 import time
 import traceback
 import typing as ty
@@ -242,7 +243,7 @@ def delete_image_on_error(function):
 
 # Each collection of events is a dict of eventlet Events keyed by a tuple of
 # event name and associated tag
-_InstanceEvents = ty.Dict[ty.Tuple[str, str], eventlet.event.Event]
+_InstanceEvents = ty.Dict[ty.Tuple[str, str], threading.Event]
 
 
 class InstanceEvents(object):
@@ -258,12 +259,12 @@ class InstanceEvents(object):
         instance: 'objects.Instance',
         name: str,
         tag: str,
-    ) -> eventlet.event.Event:
+    ) -> threading.Event:
         """Prepare to receive an event for an instance.
 
         This will register an event for the given instance that we will
         wait on later. This should be called before initiating whatever
-        action will trigger the event. The resulting eventlet.event.Event
+        action will trigger the event. The resulting threading.Event
         object should be wait()'d on to ensure completion.
 
         :param instance: the instance for which the event will be generated
@@ -281,7 +282,7 @@ class InstanceEvents(object):
 
             instance_events = self._events.setdefault(instance.uuid, {})
             return instance_events.setdefault((name, tag),
-                                              eventlet.event.Event())
+                                              threading.Event())
         LOG.debug('Preparing to wait for external event %(name)s-%(tag)s',
                   {'name': name, 'tag': tag}, instance=instance)
         return _create_or_get_event()
@@ -295,7 +296,7 @@ class InstanceEvents(object):
         :param instance: the instance for which the event was generated
         :param event: the nova.objects.external_event.InstanceExternalEvent
                       that describes the event
-        :returns: the eventlet.event.Event object on which the waiters
+        :returns: the threading.Event object on which the waiters
                   are blocked
         """
         no_events_sentinel = object()
@@ -345,7 +346,7 @@ class InstanceEvents(object):
         and return them (indexed by event name).
 
         :param instance: the instance for which events should be purged
-        :returns: a dictionary of {event_name: eventlet.event.Event}
+        :returns: a dictionary of {event_name: threading.Event}
         """
         @utils.synchronized(self._lock_name(instance))
         def _clear_events():
@@ -415,7 +416,7 @@ class ComputeVirtAPI(virtapi.VirtAPI):
         TIMED_OUT = "timed out"
         RECEIVED_NOT_PROCESSED = "received but not processed"
 
-        def __init__(self, name: str, event: eventlet.event.Event) -> None:
+        def __init__(self, name: str, event: threading.Event) -> None:
             self.name = name
             self.event = event
             self.status = self.EXPECTED

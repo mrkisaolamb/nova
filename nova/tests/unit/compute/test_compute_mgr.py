@@ -16,13 +16,14 @@ import contextlib
 import copy
 import datetime
 import fixtures as std_fixtures
+import threading
+
 import time
 from unittest import mock
 
 from cinderclient import exceptions as cinder_exception
 from cursive import exception as cursive_exception
 import ddt
-from eventlet import event as eventlet_event
 from eventlet import timeout as eventlet_timeout
 from keystoneauth1 import exceptions as keystone_exception
 import netaddr
@@ -5496,7 +5497,7 @@ class ComputeManagerUnitTestCase(test.NoDBTestCase,
 
     @mock.patch('nova.compute.manager.InstanceEvents._lock_name')
     def test_pop_instance_event(self, lock_name_mock):
-        event = eventlet_event.Event()
+        event = threading.Event()
         self.compute.instance_events._events = {
             uuids.instance: {
                 ('network-vif-plugged', None): event,
@@ -5512,7 +5513,7 @@ class ComputeManagerUnitTestCase(test.NoDBTestCase,
 
     @mock.patch('nova.compute.manager.InstanceEvents._lock_name')
     def test_clear_events_for_instance(self, lock_name_mock):
-        event = eventlet_event.Event()
+        event = threading.Event()
         self.compute.instance_events._events = {
             uuids.instance: {
                 ('test-event', None): event,
@@ -5547,7 +5548,7 @@ class ComputeManagerUnitTestCase(test.NoDBTestCase,
         self.assertTrue(hasattr(result, 'send'))
 
     def test_process_instance_event(self):
-        event = eventlet_event.Event()
+        event = threading.Event()
         self.compute.instance_events._events = {
             uuids.instance: {
                 ('network-vif-plugged', None): event,

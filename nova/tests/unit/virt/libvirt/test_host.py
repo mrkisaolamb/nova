@@ -25,6 +25,7 @@ from oslo_serialization import jsonutils
 from oslo_utils.fixture import uuidsentinel as uuids
 from oslo_utils import uuidutils
 import testtools
+import threading
 
 from nova.compute import vm_states
 from nova import exception
@@ -457,7 +458,7 @@ class HostTestCase(test.NoDBTestCase):
 
     @mock.patch.object(host.Host, "_connect")
     def test_conn_event_thread(self, mock_conn):
-        event = eventlet.event.Event()
+        event = threading.Event()
         h = host.Host("qemu:///system", conn_event_handler=event.send)
         h.initialize()
 
