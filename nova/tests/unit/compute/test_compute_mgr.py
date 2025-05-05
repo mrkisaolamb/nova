@@ -16,13 +16,13 @@ import contextlib
 import copy
 import datetime
 import fixtures as std_fixtures
+import threading
 import time
 from unittest import mock
 
 from cinderclient import exceptions as cinder_exception
 from cursive import exception as cursive_exception
 import ddt
-from eventlet import event as eventlet_event
 from eventlet import timeout as eventlet_timeout
 from keystoneauth1 import exceptions as keystone_exception
 import netaddr
@@ -5491,12 +5491,12 @@ class ComputeManagerUnitTestCase(test.NoDBTestCase,
             result,
             self.compute.instance_events._events[uuids.instance]
                                                 [('test-event', None)])
-        self.assertTrue(hasattr(result, 'send'))
+        self.assertTrue(hasattr(result, 'set'))
         lock_name_mock.assert_called_once_with(inst_obj)
 
     @mock.patch('nova.compute.manager.InstanceEvents._lock_name')
     def test_pop_instance_event(self, lock_name_mock):
-        event = eventlet_event.Event()
+        event = threading.Event()
         self.compute.instance_events._events = {
             uuids.instance: {
                 ('network-vif-plugged', None): event,
@@ -5512,7 +5512,7 @@ class ComputeManagerUnitTestCase(test.NoDBTestCase,
 
     @mock.patch('nova.compute.manager.InstanceEvents._lock_name')
     def test_clear_events_for_instance(self, lock_name_mock):
-        event = eventlet_event.Event()
+        event = threading.Event()
         self.compute.instance_events._events = {
             uuids.instance: {
                 ('test-event', None): event,
@@ -5544,10 +5544,10 @@ class ComputeManagerUnitTestCase(test.NoDBTestCase,
             result,
             self.compute.instance_events._events[uuids.instance]
                                                 [('test-event', None)])
-        self.assertTrue(hasattr(result, 'send'))
+        self.assertTrue(hasattr(result, 'set'))
 
     def test_process_instance_event(self):
-        event = eventlet_event.Event()
+        event = threading.Event()
         self.compute.instance_events._events = {
             uuids.instance: {
                 ('network-vif-plugged', None): event,
@@ -5557,8 +5557,7 @@ class ComputeManagerUnitTestCase(test.NoDBTestCase,
         event_obj = objects.InstanceExternalEvent(name='network-vif-plugged',
                                                   tag=None)
         self.compute._process_instance_event(inst_obj, event_obj)
-        self.assertTrue(event.ready())
-        self.assertEqual(event_obj, event.wait())
+        self.assertTrue(event.is_set())
         self.assertEqual({}, self.compute.instance_events._events)
 
     @ddt.data(task_states.DELETING,
@@ -6033,11 +6032,7 @@ class ComputeManagerUnitTestCase(test.NoDBTestCase,
         self.compute.instance_events.cancel_all_events()
         # call it again to make sure we handle that gracefully
         self.compute.instance_events.cancel_all_events()
-        self.assertTrue(fake_eventlet_event.send.called)
-        event = fake_eventlet_event.send.call_args_list[0][0][0]
-        self.assertEqual('network-vif-plugged', event.name)
-        self.assertEqual(uuids.portid, event.tag)
-        self.assertEqual('failed', event.status)
+        self.assertTrue(fake_eventlet_event.set.called)
 
     def test_cleanup_cancels_all_events(self):
         with mock.patch.object(self.compute, 'instance_events') as mock_ev:
