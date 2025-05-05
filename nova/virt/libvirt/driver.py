@@ -11129,7 +11129,7 @@ class LibvirtDriver(driver.ComputeDriver):
             if info.type == libvirt.VIR_DOMAIN_JOB_NONE:
                 # Either still running, or failed or completed,
                 # lets untangle the mess
-                if not finish_event.ready():
+                if not finish_event.is_set():
                     LOG.debug("Operation thread is still running",
                               instance=instance)
                 else:
@@ -11316,13 +11316,13 @@ class LibvirtDriver(driver.ComputeDriver):
                                      migrate_data, guest,
                                      device_names)
 
-        finish_event = eventlet.event.Event()
+        finish_event = threading.Event()
         self.active_migrations[instance.uuid] = deque()
 
         def thread_finished(thread, event):
             LOG.debug("Migration operation thread notification",
                       instance=instance)
-            event.send()
+            event.set()
         opthread.link(thread_finished, finish_event)
 
         # Let eventlet schedule the new thread right away

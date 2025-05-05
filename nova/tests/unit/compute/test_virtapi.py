@@ -13,9 +13,9 @@
 #    under the License.
 
 import collections
+import queue
 from unittest import mock
 
-import eventlet.timeout
 import os_traits
 from oslo_utils.fixture import uuidsentinel as uuids
 
@@ -199,13 +199,13 @@ class ComputeVirtAPITest(VirtAPIBaseTest):
 
         @mock.patch.object(compute_manager, 'LOG', new=mock_log)
         @mock.patch.object(self.virtapi._compute, '_event_waiter',
-                           side_effect=eventlet.timeout.Timeout())
+                           side_effect=queue.Empty())
         def do_test(mock_waiter):
             with self.virtapi.wait_for_instance_event(
                     instance, [('foo', 'bar')]):
                 pass
 
-        self.assertRaises(eventlet.timeout.Timeout, do_test)
+        self.assertRaises(queue.Empty, do_test)
         mock_log.warning.assert_called_once_with(
             'Timeout waiting for %(events)s for instance with vm_state '
             '%(vm_state)s and task_state %(task_state)s. '
@@ -238,7 +238,7 @@ class ComputeVirtAPITest(VirtAPIBaseTest):
                 event = mock.Mock(status="completed")
                 return event
             else:
-                raise eventlet.timeout.Timeout()
+                raise queue.Empty()
 
         @mock.patch.object(compute_manager, 'LOG', new=mock_log)
         @mock.patch.object(self.virtapi._compute, '_event_waiter',
@@ -248,7 +248,7 @@ class ComputeVirtAPITest(VirtAPIBaseTest):
                     instance, [('foo', 'bar'), ('missing', 'event')]):
                 pass
 
-        self.assertRaises(eventlet.timeout.Timeout, do_test)
+        self.assertRaises(queue.Empty, do_test)
         mock_log.warning.assert_called_once_with(
             'Timeout waiting for %(events)s for instance with vm_state '
             '%(vm_state)s and task_state %(task_state)s. '
@@ -282,7 +282,7 @@ class ComputeVirtAPITest(VirtAPIBaseTest):
                 event = mock.Mock(status="completed")
                 return event
             else:
-                raise eventlet.timeout.Timeout()
+                raise queue.Empty()
 
         def fake_prepare_for_instance_event(instance, name, tag):
             m = mock.MagicMock()
@@ -314,7 +314,7 @@ class ComputeVirtAPITest(VirtAPIBaseTest):
             ):
                 self.virtapi.exit_wait_early([('early', 'event')])
 
-        self.assertRaises(eventlet.timeout.Timeout, do_test)
+        self.assertRaises(queue.Empty, do_test)
         mock_log.warning.assert_called_once_with(
             'Timeout waiting for %(events)s for instance with vm_state '
             '%(vm_state)s and task_state %(task_state)s. '
@@ -336,7 +336,8 @@ class ComputeVirtAPITest(VirtAPIBaseTest):
                     'missing-event: timed out after 1.23 seconds, '
                     'received-but-not-waited-event: received but not '
                     'processed, '
-                    'missing-but-not-waited-event: expected but not received'
+                    'missing-but-not-waited-event: received but not '
+                    'processed'
             },
             instance=instance
         )
