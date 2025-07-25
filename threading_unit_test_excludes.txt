@@ -1,6 +1,13 @@
 nova.tests.unit.console.rfb.test_authvencrypt.RFBAuthSchemeVeNCryptTestCase.test_security_handshake_fails_on_ssl_failure
 nova.tests.unit.console.rfb.test_authvencrypt.RFBAuthSchemeVeNCryptTestCase.test_security_handshake_without_x509
 nova.tests.unit.console.rfb.test_authvencrypt.RFBAuthSchemeVeNCryptTestCase.test_security_handshake_with_x509
+nova.tests.unit.storage.test_rbd.RbdTestCase.test_cleanup_volumes
+nova.tests.unit.storage.test_rbd.RbdTestCase.test_cleanup_volumes_fail_not_found
+nova.tests.unit.storage.test_rbd.RbdTestCase.test_cleanup_volumes_fail_other
+nova.tests.unit.storage.test_rbd.RbdTestCase.test_cleanup_volumes_fail_snapshots
+nova.tests.unit.storage.test_rbd.RbdTestCase.test_cleanup_volumes_pending_resize
+nova.tests.unit.storage.test_rbd.RbdTestCase.test_cleanup_volumes_reverting_resize
+nova.tests.unit.storage.test_rbd.RbdTestCase.test_destroy_volume
 nova.tests.unit.test_context.ContextTestCase.test_scatter_gather_cells_queued_task_cancelled
 
 # Wait until eventlet.Event is removed by https://review.opendev.org/c/openstack/nova/+/949754
