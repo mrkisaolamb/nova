@@ -23,6 +23,7 @@ from http import cookies as Cookie
 from http import HTTPStatus
 import os
 import socket
+import socketserver
 from urllib import parse as urlparse
 
 from oslo_log import log as logging
@@ -36,6 +37,8 @@ from nova import context
 from nova import exception
 from nova.i18n import _
 from nova import objects
+from nova import utils
+
 
 from oslo_utils import timeutils
 import threading
@@ -165,8 +168,9 @@ class NovaProxyRequestHandler(websockify.ProxyRequestHandler):
         """Called after a new WebSocket connection has been established."""
         # Reopen the eventlet hub to make sure we don't share an epoll
         # fd with parent and/or siblings, which would be bad
-        from eventlet import hubs
-        hubs.use_hub()
+        if not utils.concurrency_mode_threading():
+            from eventlet import hubs
+            hubs.use_hub()
 
         # The nova expected behavior is to have token
         # passed to the method GET of the request
@@ -305,7 +309,9 @@ class NovaProxyRequestHandler(websockify.ProxyRequestHandler):
         return super(NovaProxyRequestHandler, self).send_head()
 
 
-class NovaWebSocketProxy(websockify.WebSocketProxy):
+class NovaWebSocketProxyEventlet(
+    websockify.WebSocketProxy):
+
     def __init__(self, *args, **kwargs):
         """:param security_proxy: instance of
             nova.console.securityproxy.base.SecurityProxy
@@ -326,8 +332,21 @@ class NovaWebSocketProxy(websockify.WebSocketProxy):
             kwargs['ssl_options'] = websockify.websocketproxy. \
                                     select_ssl_version(ssl_min_version)
 
-        super(NovaWebSocketProxy, self).__init__(*args, **kwargs)
+        super(NovaWebSocketProxyEventlet, self).__init__(*args, **kwargs)
 
     @staticmethod
     def get_logger():
         return LOG
+
+
+class NovaWebSocketProxyThread(
+    socketserver.ThreadingMixIn,
+    NovaWebSocketProxyEventlet
+    ):
+    daemon_threads = True  # Threads die when the main process dies
+
+
+if utils.concurrency_mode_threading():
+    NovaWebSocketProxy = NovaWebSocketProxyThread
+else:
+    NovaWebSocketProxy = NovaWebSocketProxyEventlet
